@@ -6,21 +6,26 @@
 #include <new>     // for bad_alloc
 #include <iomanip>
 #include <iostream>
+using namespace std;
 
+// Primero, se define una Plantilla, formada por nodos enlazados en sólo una dirección
 template<class ItemType>
-struct NodeType {
-    NodeType* next;
-    ItemType  info;
+struct NodeType { // Creamos una estructura NodeType que contendrá 2 atributos distintos para cada uno
+    NodeType* next; // guarda la dirección del siguiente dato que hay tras el actual
+    ItemType  info; // guarda el dato actual con el que trabajamos
 };
 
+//
 // Primero se declara la clase UnsortedLinkedType, donde se indicarán los métodos que luego crearemos
-
+//
 template<class ItemType>
 class UnsortedLinkedType {
 
     public: // Declaramos los métodos (esto son los accesibles públicamente)
-        UnsortedLinkedType();
-        ~UnsortedLinkedType();
+        UnsortedLinkedType(); // Este constructor sólo se ejecuta 1 vez al inicio del programa
+
+        ~UnsortedLinkedType(); // Este destructor usa MakeEmpty para vaciar los nodos tras hacer un
+                               // "return 0" en el main.cpp, vaciándolos con "delete" uno por uno
         bool IsFull() const;
         int  LengthIs() const;
         void RetrieveItem(ItemType& item, bool& found);
@@ -30,7 +35,7 @@ class UnsortedLinkedType {
         void MakeEmpty();
         void GetNextItem(ItemType& item);
         void Print(std::ostream& c);
-        bool detectLoop(); // Este método es el nuevo, declarado para el Ejercicio 1
+        bool detectLoop(int& pos); // Este método es el nuevo, declarado para el Ejercicio 1
 
     private: // Y declaramos los atributos privados (solo son accesibles usando los métodos creados)
         int length;
@@ -38,169 +43,195 @@ class UnsortedLinkedType {
         NodeType<ItemType> *currentPtr;
 };
 
+//
 // A continuación, inicializamos cada método declarado previamente en la clase UnsortedLinkedType
-
-template<class ItemType>
+//
+//=====================================================================================================================
+template<class ItemType> // Constructor de atributos privados, se ejecuta al crear una lista nueva
 UnsortedLinkedType<ItemType>::UnsortedLinkedType(){
-    headPtr = nullptr;
-    length = 0;
+    headPtr = nullptr; // Inicializa el puntero apuntando a ningún nodo
+    length = 0; // Como el programa se inicia, la longitud inicial de la lista es 0
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Destructor para cuando la lista se elimina (tras acabar el main.cpp)
 UnsortedLinkedType<ItemType>::~UnsortedLinkedType(){
-    MakeEmpty();
+    MakeEmpty(); // Llama al MakeEmpty para liberar la memoria reservada/ocupada por los nodos
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Método para vaciar los nodos usados uno a uno
 void UnsortedLinkedType<ItemType>::MakeEmpty(){
-    NodeType<ItemType>* tmp;
-    while (headPtr != nullptr) {
-        tmp = headPtr;
-        headPtr = headPtr->next;
-        delete tmp;
+    NodeType<ItemType>* temporal; // Creamos un puntero temporal donde se vaciará el Primer Puntero
+    while (headPtr != nullptr) { // Mientras que el Primer Puntero no sea nulo (no tenga direcciones)
+        temporal = headPtr; // El puntero temporal guarda la dirección del Primer Nodo
+        headPtr = headPtr->next; // Luego, mueve el Primer Nodo al siguiente nodo
+        delete temporal; // Y la dirección donde estuvo el Primer Nodo, se borra
     }
-
+    // Una vez que el Primer puntero queda vacío, se ajusta la longitud a 0 (ya que se vació todo)
     length = 0;
 }
 
-
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Método que indicará si la lista está llena o no, osea si hay memoria o no
 bool UnsortedLinkedType<ItemType>::IsFull() const {
-    NodeType<ItemType>* tmp;
+    NodeType<ItemType>* temporal;
 
-    try {
-        tmp = new NodeType<ItemType>;
-        delete tmp;
-
+    try { // Al ser memoria dinámica, tratará de reservar un nodo temporal
+        temporal = new NodeType<ItemType>;
+        delete temporal; // Para luego borrarlo inmediatamente, si se pudo hacer, devuelve False
+                         // indicando que la lista NO está llena
         return false;
-    } catch (std::bad_alloc exception) {
-        return true;
+
+    } catch (std::bad_alloc exception) { // Pero si el programa lanza una excepción, es porque no pudo
+                                         // reservar memoria, indicando que la lista está llena
+        return true;   // al estar llena, devuelve True
     }
-
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Método que devuelve la longitud de la lista
 int UnsortedLinkedType<ItemType>::LengthIs() const {
-    return length;
+    return length; // Simple, solo devuelve el valor de la longitud de la lista
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Método que busca un item en la lista, y devuelve true si lo ha encontrado
 void UnsortedLinkedType<ItemType>::RetrieveItem(ItemType& item, bool& found) {
-    // Pre: Key member(s) of item is initialized.
-    // Post: If found, item's key matches an element's key in the
-    //       list and a copy of that element has been stored in item;
-    //       otherwise, item is unchanged.
-    bool moreToSearch;
-    NodeType<ItemType>* location = headPtr;
-    found = false;
 
-    // More to search if there is a next node
+    bool moreToSearch; // Creamos un booleano que indicará si debemos seguir buscando o no
+    NodeType<ItemType>* location = headPtr; // Creamos un puntero que buscará el item, desde el 1º nodo
+    found = false; // Inicializamos el booleano en False, ya que aún no se encontró el item
+
+    // Si el puntero location no es nulo, es porque podemos seguir buscando el item por los nodos
     moreToSearch = (location != nullptr);
     
-    while (moreToSearch && !found) {
-        if (item == location->info) {
-            found = true;
-            item = location->info;
-        } else {
-            location = location->next;
-            moreToSearch = (location != nullptr);
+    while (moreToSearch && !found) { // Mientras que podamos seguir buscando y no se haya encontrado...
+        if (item == location->info) { // Si el item a buscar es igual al item actual del nodo
+            found = true; // cambiamos el booleano a True porque ya se encontró
+            item = location->info; // Y guardamos el nodo actual en el item
+        } else { // Si aún no se encontró...
+            location = location->next; // Pasamos al siguiente nodo a revisar
+            moreToSearch = (location != nullptr); // y comprobamos si podemos seguir buscando o no
         }
     }
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Método que permite insertar en la lista un nuevo item
 void UnsortedLinkedType<ItemType>::InsertItem(ItemType item) {
-    // Post: item is in the list.
-    NodeType<ItemType>* location = headPtr;
 
-    if (location != nullptr)
-        while (location->next != nullptr)
-            location = location->next;
+    // Iremos 1 por 1 mirando cada nodo hasta llegar a uno que esté vacío
+    NodeType<ItemType>* location = headPtr; //Creamos un puntero que se inicia en el Primer nodo
 
+    if (location != nullptr) // Si el nodo actual no está vacío...
+        while (location->next != nullptr) // mientras que el siguiente nodo no esté vacío
+            location = location->next; // iremos saltando de nodo en nodo hasta llegar a uno vacío
+
+    // Una vez llegue al último nodo de la lista, reserva memoria para el nuevo eslabón
     NodeType<ItemType>* newNode = new NodeType<ItemType>;
-    newNode->info = item;
-    newNode->next = nullptr;
+    newNode->info = item; // dentro del eslabón, el nodo donde está actualmente será el item a meter
+    newNode->next = nullptr; // y el siguiente nodo al actual estará vacío
 
-    if (location == nullptr)
-        headPtr = newNode;
-    else
+    if (location == nullptr) // Si llegamos a un nodo que está vacío
+        headPtr = newNode; // hacemos que el primer nodo apunte ahora al nuevo nodo
+
+    else // Y si no está vacío, se engancha el último nodo al nuevo
         location->next = newNode;
     
-    length++;
+    length++; // Por último, sumamos 1 a la longitud total de la lista
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Método que permite borrar de la lista un item
 void UnsortedLinkedType<ItemType>::DeleteItem(ItemType item) {
-    // Pre:  item's key has been initialized.
-    //       An element in the list has a key that matches item's.
-    // Post: No element in the list has a key that matches item's.
-    NodeType<ItemType>* location = headPtr;
-    NodeType<ItemType>* prev = headPtr;
 
-    while (item != location->info) {
-        prev = location;
-        location = location->next;
+    NodeType<ItemType>* location = headPtr; // Creamos un puntero que se inicia en el Primer nodo
+    NodeType<ItemType>* prev = headPtr; // Y otro que siempre apunte al anterior a location
+
+    while (item != location->info) { // Mientras que el item sea distinto al actual en location
+        prev = location; // movemos el puntero previo al actual
+        location = location->next; // y el actual al siguiente, moviendo ambos punteros 1 vez
     }
 
     //  ----- prev ----       ---   loc  ----       -- loc->next --
     //  | info | next | <---> | info | next | <---> | info | next | 
     //  ---------------       ---------------       ---------------
     
-    if (location == headPtr)
-        headPtr = location->next; // location es el primer elemento
-    else
-        prev->next = location->next;
-
-    delete location;
+    // Ahora, una vez encontrado el objeto, pasamos a ver 2 posibilidades
+    if (location == headPtr){ // Si el nodo actual (a borrar) es igual al primer nodo
+        headPtr = location->next; // hacemos que el primer nodo se desplace al siguiente del location
+    }
         
-    length--;
+    else { // Pero si es otro cualquiera, el nodo anterior pasará al que sigue del location
+        prev->next = location->next;
+    }
+
+    delete location; // Por último, borramos el nodo location (donde está el item a borrar)
+    length--; // Y acortamos la longitud a 1 menos
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Reinicia el puntero cursor para que empieza de vuelta en el primer nodo
 void UnsortedLinkedType<ItemType>::ResetList() {
-    // Post: currentPos has been initialized.
-    currentPtr = headPtr;
+
+    currentPtr = headPtr; // El cursor se reinicia al primer nodo de la lista
 }
 
-template<class ItemType>
+//=====================================================================================================================
+template<class ItemType> // Método que guarda el siguiente item
 void UnsortedLinkedType<ItemType>::GetNextItem(ItemType& item) {
-    // Pre:  No transformer has been executed since last call
-    // Post: item is current item.
-    //       Current position has been updated.
-    item = currentPtr->info;
-    currentPtr = currentPtr->next;
+
+    item = currentPtr->info; // Guarda el dato del nodo actual en item
+    currentPtr = currentPtr->next; // Y pasa al siguiente nodo
 }
 
-template<class ItemType>
-void UnsortedLinkedType<ItemType>::Print(std::ostream& c) {
-    ItemType tmp;
-    c << "List length: " << length << std::endl;
+//=====================================================================================================================
+template<class ItemType> // Método que imprime por pantalla la lista completa
+void UnsortedLinkedType<ItemType>::Print(ostream& c) {
 
-    ResetList();
-    for (int i=0; i < length; i++) {
-        c << "- node: ";
-        if (i==0 or i==length-1)
-            c << std::setw(12);
-        else
-            c << std::setw(12);
-        c << currentPtr;   
-        GetNextItem(tmp);
+    ItemType temporal; // Creamos a un temporal 
+    // Y luego, mostramos por pantalla la longitud de la lista, antes de empezar con ella
+    c << "La longitud de la lista es: " << length << endl;
+
+    ResetList(); // Primero de todo, reiniciamos el cursor de la lista a la primera posición
+    for (int i=0; i < length; i++) { // Abrimos un bucle que se repita hasta igualar la longitud
+        c << "- node: "; // Indica que a partir de aquí, se imprimirán los nodos
+        if (i==0 or i==length-1){ // Si i es igual a 0 ó igual a longitud - 1...
+            c << setw(12); // Reserva 12 carácteres para el dato que se vaya a imprimir
+        }
+        else { // Si i no es ninguno, igualmente reservará 12 carácteres
+            c << setw(12);
+        }
+        c << currentPtr;  // Imprimimos por pantalla el primer elemento de la lista 
+        GetNextItem(temporal); // Y avanzamos al siguiente elemento
 
         c << " -";
-        if (i!=length-1)
-            c << "       ";
+        if (i!=length-1){ // Si i es distinto de longitud - 1
+            c << "       "; // Imprime un espacio en pantalla, para separar los nodos visualmente
+        }
         
     }
-    c << std::endl;
+    c << endl;
 
-    ResetList();
-    for (int i=0; i < length; i++) {
+    ResetList(); // Volvemos a reiniciar el cursos de vuelta al inicio
+    for (int i=0; i < length; i++) { // Y abrimos otro bucle igual al anterior
+
+        // Imprimimos por pantalla el elemento actual y el que le sigue en el cursor
         c << "| " << currentPtr->info << " | " << currentPtr->next << " |";
-        GetNextItem(tmp);
-        if (i!=length-1)
-            c << " <---> ";
-    }
-    c << std::endl << std::endl;
+        GetNextItem(temporal); // Y movemos el cursor al siguiente item
 
+        if (i!=length-1){ // Si i es distinto de longitud - 1
+            c << " <---> "; // Dibujo por pantalla flechas que conectará ambos nodos visualmente
+        }
+    }
+    c << endl << endl; // y acabamos cerrando las líneas
+
+
+}
+
+//=====================================================================================================================
+template<class ItemType>
+void UnsortedLinkedType<ItemType>::detectLoop(int& pos){
 
 }
