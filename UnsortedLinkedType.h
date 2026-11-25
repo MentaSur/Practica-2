@@ -231,7 +231,35 @@ void UnsortedLinkedType<ItemType>::Print(ostream& c) {
 }
 
 //=====================================================================================================================
-template<class ItemType>
-void UnsortedLinkedType<ItemType>::detectLoop(int& pos){
+// EJERCICIO 1: Diseñar un método para detectar un bucle en la lista. Tendrá un bucle si el puntero del
+// último nodo apunta a cualquier otro nodo en la lista o a sí mismo
 
+template<class ItemType> // Método que detecta si la lista contiene algún bucle o no
+bool UnsortedLinkedType<ItemType>::detectLoop(int& pos){
+
+    NodeType<ItemType>* location = headPtr; // Creamos un puntero para desplazarnos por los nodos
+    
+    for ( int i = 0; i < length && location != nullptr; i++){ // Hasta que no lleguemos al final...
+        location = location->next; // Vamos a ir avanzando 1 por 1 por cada nodo hasta el último
+    }
+
+    if (location != nullptr){ // Si en el último nodo miramos al siguiente y no está vacío, es porque
+                              // está vinculado a algún nodo por los que pasamos antes (o él mismo)
+        NodeType<ItemType>* nodo_bucle = location; // Creamos un nodo que se quedará quieto en ese nodo
+
+        pos = 0; // iniciamos el entero de posición a 0
+        location = headPtr; // y reseteamos al inicio el puntero para desplazarse por nodos
+
+        while (location != nodo_bucle && pos < length){ // Mientras que el puntero location sea distinto
+                // sea distinto al nodo que se vincula con alguno...
+                location = location->next; // Avanzaremos al siguiente nodo para comparar
+                pos++; // Y sumamos 1 a la posición donde estamos
+        }
+        return true; // En principio, como el último nodo no era nulo, tarde o temprano encontrará
+                     // al nodo con el que se vincula el último, por lo que seguro se será cierto
+
+    } else { // Pero en el caso de que el último nodo apuntara al vacío, es porque no hay bucle
+        pos = -1; // Indicamos que la posición es -1 (indicando que no hay bucle)
+        return false; // Y devolvemos False (no hay ningún bucle detectado)
+    }
 }
