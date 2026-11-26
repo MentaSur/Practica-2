@@ -36,6 +36,7 @@ class UnsortedLinkedType {
         void GetNextItem(ItemType& item);
         void Print(std::ostream& c);
         bool detectLoop(int& pos); // Este método es el nuevo, declarado para el Ejercicio 1
+        void reverseKGroup(int& k); // Este método es también nuevo, declarado para el Ejercicio 2
 
     private: // Y declaramos los atributos privados (solo son accesibles usando los métodos creados)
         int length;
@@ -261,5 +262,58 @@ bool UnsortedLinkedType<ItemType>::detectLoop(int& pos){
     } else { // Pero en el caso de que el último nodo apuntara al vacío, es porque no hay bucle
         pos = -1; // Indicamos que la posición es -1 (indicando que no hay bucle)
         return false; // Y devolvemos False (no hay ningún bucle detectado)
+    }
+}
+
+//=====================================================================================================================
+// EJERCICIO 2: Diseñar un método que invierta la lista cada k elementos. Si la longitud no es múltiplo
+// de k, los últimos elementos sueltos se consideran grupos y se invierten igualmente
+
+template<class ItemType> // Método que invierte la lista cada k elementos
+void UnsortedLinkedType<ItemType>::reverseKGroup(int& k){
+
+    // Primero comprobaremos si la lista está vacía o tiene solo 1 elemento o si k es menor a 1
+    if (headPtr == nullptr || headPtr->next == nullptr || k <= 1) {
+        return; // si alguno de los 3 casos se cumple, es porque no hay nada que invertir, se aborta
+    }
+    // una vez comprobado que la lista es apta, pasaremos primero a definir 2 punteros de ayuda
+    NodeType<ItemType>* location = headPtr; // este puntero irá recorriendo los nodos 1 a 1
+    NodeType<ItemType>* fin_anterior = nullptr; // y este guarda el último nodo del grupo anterior
+                                                // que ya habremos invertido
+
+    // Iniciaremos un bucle externo que irá avanzando grupo por grupo hasta llegar al final de la lista
+    while (location != nullptr) { // Mientras que la localizacion actual NO sea nula...
+
+        // Antes de nada, declararemos 3 punteros a nodos más, tanto por utilidad como por auxiliar
+        // los pongo adentro del bucle while para que, tras invertir, se reinicien los valores
+
+        NodeType<ItemType>* inicio_grupo = location; // guarda el nodo que pasará del 1º al último del grupo
+        NodeType<ItemType>* anterior = nullptr; // este puntero guarda al nodo previo del grupo actual
+        NodeType<ItemType>* siguiente = nullptr; // Y un puntero auxi. para no perder el resto de la lista
+
+        int conteo_k = 0; // Y un entero que indicará cuándo hemos llegado al valor de "k" indicado
+        // si llegamos a valor "k", paramos la inversión del grupo actual, lo reiniciamos y seguimos ahora
+        // invierto otro grupo, por así decirlo, si k=3, los grupos a invertir son de 3 valores cada uno.
+
+        // Y abrimos otro bucle para invertir los enlaces de "k" nodos, o menos si sobran algunos al final
+        while (location != nullptr && conteo_k < k) { // Mientras que location NO sea nulo y no superemos k
+            siguiente = location->next; // Guardamos el siguiente nodo antes de seguir avanzando como ayuda
+            location->next = anterior; // Luego, invertimos el nodo actual para que ahora mire para atrás
+            anterior = location; // Ahora, movemos el nodo 'anterior' hacia el nodo actual 'location'
+            location = siguiente;//Y ponemos el nodo actual location al 'siguiente' nodo que guardamos antes
+            conteo_k++; // Y una vez invertido 1 nodo, sumamos 1 al contador de k 
+        }
+        // Una vez que el contador llega a k, se deja de invertir el grupo y pasaremos al siguiente una vez
+        // que hayamos reiniciado los punteros a nodo en el bucle externo
+
+        // Cuando el grupo que estábamos invierto se haya invertido, lo uniremos a lo que habia en la lista
+        if (fin_anterior == nullptr) {//Si el grupo era el 1º, ponemos el primer nodo en el anterior del grupo
+            headPtr = anterior;
+
+        } else {// Pero si ya había otro grupo antes, conectamos su final con el inicio del actual invertido
+            fin_anterior->next = anterior;
+        }
+    // Por último, ponemos el último nodo del grupo actual ya invertido en la variable que indica eso mismo
+        fin_anterior = inicio_grupo;
     }
 }
