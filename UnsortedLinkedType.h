@@ -37,6 +37,7 @@ class UnsortedLinkedType {
         void Print(std::ostream& c);
         bool detectLoop(int& pos); // Este método es el nuevo, declarado para el Ejercicio 1
         void reverseKGroup(int& k); // Este método es también nuevo, declarado para el Ejercicio 2
+        void createLoop(int targetPos); // metodo AUXILIAR para el main.cpp (fuerza un bucle)
 
     private: // Y declaramos los atributos privados (solo son accesibles usando los métodos creados)
         int length;
@@ -64,14 +65,17 @@ UnsortedLinkedType<ItemType>::~UnsortedLinkedType(){
 template<class ItemType> // Método para vaciar los nodos usados uno a uno
 void UnsortedLinkedType<ItemType>::MakeEmpty(){
     NodeType<ItemType>* temporal; // Creamos un puntero temporal donde se vaciará el Primer Puntero
-    while (headPtr != nullptr) { // Mientras que el Primer Puntero no sea nulo (no tenga direcciones)
+    while (headPtr != nullptr && length > 0) { // Mientras que el Primer Puntero no sea nulo y la longitud sea > 0
         temporal = headPtr; // El puntero temporal guarda la dirección del Primer Nodo
         headPtr = headPtr->next; // Luego, mueve el Primer Nodo al siguiente nodo
         delete temporal; // Y la dirección donde estuvo el Primer Nodo, se borra
+        length--; // Y con cada vuelta, acortamos la longitud hasta llegar a 0
     }
-    // Una vez que el Primer puntero queda vacío, se ajusta la longitud a 0 (ya que se vació todo)
-    length = 0;
+    // Y dejamos el primer puntero vacío
+    headPtr = nullptr;;
 }
+
+// modifiqué el MakeEmpty para que no entre en un bucle infinito por culpa del bucle activo en una lista
 
 //=====================================================================================================================
 template<class ItemType> // Método que indicará si la lista está llena o no, osea si hay memoria o no
@@ -316,4 +320,30 @@ void UnsortedLinkedType<ItemType>::reverseKGroup(int& k){
     // Por último, ponemos el último nodo del grupo actual ya invertido en la variable que indica eso mismo
         fin_anterior = inicio_grupo;
     }
+}
+
+//=====================================================================================================================
+// MÉTODO AUXILIAR CREADO PARA FORZAR UN BUCLE AL PROBAR EL PROGRAMA EN EL MAIN.CPP
+// Al headPtr no se puede acceder desde el main.cpp porque es privado
+template<class ItemType>
+void UnsortedLinkedType<ItemType>::createLoop(int PosObjetivo) {
+
+    // Si el primer nodo es nulo ó la Posicion Objetivo es negativa ó es mayor/igual a la longitud...
+    if (headPtr == nullptr || PosObjetivo < 0 || PosObjetivo >= length){
+        return; // no podremos forzar un bucle, así que abortamos
+    }
+
+    NodeType<ItemType>* destino = headPtr; // creamos un puntero para que avance hasta la posición objetiva
+                                           // donde se creará el bucle
+
+    for (int i = 0; i < PosObjetivo; i++) { // hasta que no llegue a la posición objetiva, vamos avanzando
+        destino = destino->next;
+    }
+
+    NodeType<ItemType>* ultimo = headPtr; // Ahora, creamos otro puntero que irá hasta el final de la lista
+    while (ultimo->next != nullptr) { // y parará una vez que llegue a un nodo que esté vacío
+        ultimo = ultimo->next;
+    }
+    ultimo->next = destino; // una vez que llegue a ese nodo vacío, hacemos que ese nodo ahora apunte al
+                            // que dejamos en la posición destino ( de forma que, p.ej, el 2 conecte con 1)
 }
